@@ -1,0 +1,564 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<title>Happy Birthday!</title>
+
+<style>
+body {
+  margin: 0;
+  font-family: "Courier New", monospace;
+  background: black;
+  color: #00ffcc;
+  overflow: hidden;
+}
+
+/* SCREENS */
+.screen {
+  display: none;
+  height: 100vh;
+  width: 100%;
+  position: relative;
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+}
+
+.active { display: block; }
+
+.overlay {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  background: rgba(0,0,0,0.65);
+}
+
+.content {
+  position: relative;
+  z-index: 2;
+  text-align: center;
+  padding-top: 60px;
+}
+
+/* UI */
+input, button {
+  padding: 10px;
+  background: black;
+  color: #00ffcc;
+  border: 1px solid #00ffcc;
+  margin: 5px;
+  cursor: pointer;
+}
+
+/* GLITCH */
+.glitch { animation: glitch 0.3s; }
+@keyframes glitch {
+  0% { transform: translate(0); }
+  20% { transform: translate(-5px,5px); }
+  40% { transform: translate(5px,-5px); }
+  60% { transform: translate(-3px,3px); }
+  100% { transform: translate(0); }
+}
+
+/* ICONS */
+.icon {
+  position: absolute;
+  width: 60px;
+  cursor: pointer;
+  z-index: 10;
+}
+
+/* BUBBLES */
+.bubble {
+  position: absolute;
+  padding: 8px;
+  background: rgba(0,255,204,0.15);
+  border: 1px solid #00ffcc;
+  border-radius: 15px;
+  will-change: transform;
+}
+</style>
+</head>
+
+<body>
+
+<audio id="music"></audio>
+
+<!-- START -->
+<div id="start" class="screen active">
+  <div class="overlay"></div>
+  <div class="content">
+    <h2 id="startText"></h2>
+    <button onclick="startGame()">Auf ins Getümmel</button>
+  </div>
+</div>
+
+<!-- LOADING -->
+<div id="loading" class="screen">
+  <div class="overlay"></div>
+  <div class="content">
+    <h2 id="loadText"></h2>
+  </div>
+</div>
+
+<!-- LEVEL -->
+<div id="level" class="screen">
+  <div class="overlay"></div>
+
+  <div class="content">
+    <h2 id="title"></h2>
+    <div id="levelContent"></div>
+
+    <input id="input" placeholder="Code">
+    <button onclick="check()">ENTER</button>
+  </div>
+</div>
+
+<!-- END -->
+<div id="end" class="screen">
+  <div class="overlay"></div>
+  <div class="content">
+    <h1>Herzlichen Glückwunsch!</h1>
+
+    <button onclick="Reward()">Reward</button>
+
+    <button onclick="showEasteregg()">EASTER EGG</button>
+  </div>
+</div>
+
+<script>
+
+let level = 0;
+
+/* ---------------- START TEXT ---------------- */
+const startText =
+"Es war einmal vor langer Zeit in einer uns sehr bekannten Galaxis... auf einem uns bekannten Planeten... Unserer Erde...      Wilde Bestien wurden auf der Welt verstreut gefunden. Wir brauchen nun die Hilfe von großartigen Helden, um sie zu besiegen. Komm erstmal zu unserem Geheimversteck.";
+
+/* ---------------- LOADING ---------------- */
+const loadingTexts = {
+  1: "Die Koordinaten sind auf der folgenden Seite versteckt!",
+  2: "Sie haben sich in der Film- und Spielebranche eingeschlichen. Aber wo?",
+  3: "Japan...",
+  4: "Diese Taschenmonster haben sich hier eingenistet...",
+  5: "Versammeln wir die Helden, um die Biester endgültig zu besiegen!"
+};
+
+/* ---------------- TYPEWRITER ---------------- */
+function type(el, text, cb){
+  let i = 0;
+  el.innerHTML = "";
+
+  let t = setInterval(()=>{
+    el.innerHTML += text[i++];
+    if(i >= text.length){
+      clearInterval(t);
+      setTimeout(cb, 800);
+    }
+  }, 30);
+}
+
+/* ---------------- MUSIC ---------------- */
+function playMusic(file){
+  let m = document.getElementById("music");
+  m.src = file;
+  m.play();
+}
+
+/* ---------------- SCREEN ---------------- */
+function show(id){
+  document.querySelectorAll(".screen").forEach(s=>s.classList.remove("active"));
+  document.getElementById(id).classList.add("active");
+}
+
+/* ---------------- START ---------------- */
+window.onload = ()=>{
+  show("start");
+  type(document.getElementById("startText"), startText, ()=>{});
+};
+
+function startGame(){
+  type(document.getElementById("loadText"), loadingTexts[1], ()=> loading(1));
+}
+
+/* ---------------- LOADING ---------------- */
+function loading(n){
+  level = n;
+  show("loading");
+
+  type(document.getElementById("loadText"), loadingTexts[n], ()=>{
+    if(n === 6){
+      loadLevelEnd();
+    } else {
+      playMusic(`music/level${n}.mp3`);
+      loadLevel(n);
+    }
+  });
+}
+
+/* ---------------- LOAD LEVEL ---------------- */
+function loadLevel(n){
+  show("level");
+
+  document.body.style.backgroundImage = `url('images/level${n}.png')`;
+  document.body.style.backgroundSize = "cover";
+  document.body.style.backgroundPosition = "center";
+
+  document.getElementById("title").innerText = "LEVEL " + n;
+  document.getElementById("levelContent").innerHTML = "";
+  document.getElementById("input").value = "";
+
+  if(n === 1) level1();
+  if(n === 2) level2();
+  if(n === 3) level3();
+  if(n === 4) level4();
+  if(n === 5) level5();
+}
+
+/* ---------------- POPUP (SMALLER FIX) ---------------- */
+function showPopup(img){
+  let p = document.createElement("div");
+  p.style.position = "fixed";
+  p.style.top = "50%";
+  p.style.left = "50%";
+  p.style.transform = "translate(-50%,-50%)";
+  p.style.width = "35vw";
+  p.style.maxWidth = "400px";
+  p.style.zIndex = "999";
+  p.style.background = "black";
+  p.style.border = "1px solid #00ffcc";
+
+  p.innerHTML = `
+    <img src="${img}" style="width:100%">
+    <button onclick="this.parentElement.remove()">CLOSE</button>
+  `;
+
+  document.body.appendChild(p);
+}
+
+/* ---------------- LEVEL 1 ---------------- */
+function level1(){
+  const c = document.getElementById("levelContent");
+
+  let btn = document.createElement("button");
+  btn.innerText = "Reihenfolge";
+  btn.onclick = ()=> showPopup("images/icon1.png");
+  c.appendChild(btn);
+
+  let hint = document.createElement("button");
+  hint.innerText = "HINWEIS";
+  hint.onclick = ()=>window.open(`https://bar.wikipedia.org/wiki/Periodnsystem`);
+  c.appendChild(hint);
+
+}
+
+/* ---------------- LEVEL 2 ---------------- */
+function level2(){
+
+  const c = document.getElementById("levelContent");
+
+  let grid = document.createElement("div");
+
+  grid.style.display = "grid";
+  grid.style.gridTemplateColumns = "repeat(4,1fr)";
+  grid.style.gap = "10px";
+  grid.style.maxWidth = "900px";
+  grid.style.margin = "0 auto";
+
+  /* ---------------- LINKS ---------------- */
+
+  const links = [
+    "https://www.google.com/maps/place/Matamata,+Neuseeland/",
+    "https://www.google.com/maps/place/Pont+de+Bir-Hakeim,+Paris/",
+    "https://www.google.com/maps/place/Skellig+Michael/",
+    "https://www.google.com/maps/place/Kualoa+Ranch/@21.5203406,-157.855889,14z/data=!4m6!3m5!1s0x7c004401d5b06d6b:0xfd4ad05c61e8fe78!8m2!3d21.5186627!4d-157.8533464!16zL20vMGM4bjN2?entry=ttu&g_ep=EgoyMDI2MDUyNy4wIKXMDSoASAFQAw%3D%3D"
+  ];
+
+  /* ---------------- INFO TEXTE ---------------- */
+
+  const infos = [
+    "Nants ingonyama bagithi Baba!",
+    "I feel like you’re driving me to a court-martial.",
+    "People are always asking me if I know Tyler Durden.",
+    "I believe in America. America is my fortune.",
+    "What is the most resilient parasite? A virus? An intestinal worm?",
+    "The world is changed I feel it in the water.",
+    "Push, push, push!",
+    "The first order reigns."
+  ];
+
+  /* ---------------- OBERSTE REIHE (LINKS) ---------------- */
+
+  for(let i=0;i<4;i++){
+
+    let b = document.createElement("button");
+
+    b.innerText = (i+1);
+
+    b.onclick = ()=>{
+      window.open(links[i]);
+    };
+
+    grid.appendChild(b);
+  }
+
+  /* ---------------- UNTERE 2 REIHEN (INFOS) ---------------- */
+
+  for(let i=0;i<8;i++){
+
+    let b = document.createElement("button");
+
+    b.onclick = ()=>{
+      alert(infos[i]);
+    };
+
+    grid.appendChild(b);
+  }
+
+  c.appendChild(grid);
+
+  /* ---------------- HINWEIS ---------------- */
+
+  let hint = document.createElement("button");
+
+  hint.innerText = "HINWEIS";
+
+  hint.onclick = ()=>{
+    alert("Verbinde zueinander gehörige Teile.");
+  };
+
+  c.appendChild(hint);
+}
+
+/* ---------------- LEVEL 3 (RESTORED MOVING VERSION) ---------------- */
+function level3(){
+
+  const c = document.getElementById("levelContent");
+
+  const emojis = [
+    "1💀💡","2🥊🌌","5📓💀","6 🧱⚔","7🩸💔","4🌀🥷",
+    "6 ☁️🐒🐉","3⚗️👬🔥","4🏝️👒","7 🦸‍♂️🎓",
+    "2🗡️🛡️","8😷🩸🦴","8🩺🪨","5🦊👦"
+  ];
+
+  for(let i=0;i<20;i++){
+    let b = document.createElement("div");
+    b.className = "bubble";
+    b.innerText = emojis[i % emojis.length];
+
+    move(b);
+    c.appendChild(b);
+  }
+
+  let btn = document.createElement("button");
+  btn.innerText = "Reihenfolge";
+  btn.onclick = ()=> showPopup("images/icon3.png");
+  c.appendChild(btn);
+
+  let hint = document.createElement("button");
+  hint.innerText = "HINWEIS";
+  hint.onclick = ()=>alert("Wenn du hier draufklickst stoppen die Bubbles. Das macht das schon einfacher. :D");
+  c.appendChild(hint);
+
+  function move(b){
+    b.x = Math.random()*window.innerWidth;
+    b.y = Math.random()*window.innerHeight;
+    b.tx = Math.random()*window.innerWidth;
+    b.ty = Math.random()*window.innerHeight;
+
+    function step(){
+      b.x += (b.tx-b.x)*0.01;
+      b.y += (b.ty-b.y)*0.01;
+
+      if(Math.abs(b.x-b.tx)<10){
+        b.tx = Math.random()*window.innerWidth;
+        b.ty = Math.random()*window.innerHeight;
+      }
+
+      b.style.transform = `translate(${b.x}px,${b.y}px)`;
+      requestAnimationFrame(step);
+    }
+
+    step();
+  }
+}
+
+/* ---------------- LEVEL 4 ---------------- */
+function level4(){
+
+  const c = document.getElementById("levelContent");
+
+  let row = document.createElement("div");
+
+  /* ---------------- ZENTRIERT ---------------- */
+  row.style.position = "absolute";
+  row.style.left = "50%";
+  row.style.transform = "translateX(-50%)";
+  row.style.display = "flex";
+  row.style.gap = "60px";
+  row.style.alignItems = "center";
+
+  /* ---------------- POSITION UNTER INPUT ---------------- */
+  setTimeout(()=>{
+
+    const input = document.getElementById("input");
+    const rect = input.getBoundingClientRect();
+
+    row.style.top = (rect.bottom + 40) + "px";
+
+  }, 50);
+
+  /* ---------------- INDIVIDUELLE POPUP TEXTE ---------------- */
+  const texts = [
+    "Schwarz: Das schnellste Exemplar wird zum Anführer bestimmt und gibt als solcher den Zielort und die Geschwindigkeit der Herde vor.\n\nDank seiner erstaunlichen Beschleunigungskraft erreicht es aus dem Stand in nur zehn Schritten seine Höchstgeschwindigkeit von sage und schreibe 240 km/h.",    
+
+    "Weiß: Als dieses Pokemon in den Kopf gebissen wurde, floss Gift in seinen Kopf und setzte eine gewaltige Kraft frei.\n\nSeine Vorahnungen und sein Intellekt zeichnen es aus. Es bleibt in jeder Situation gelassen und besonnen.\n\nEs betreibt jeden Tag Forschung, um die Geheimnisse der Welt zu lüften. Es vergisst alles, was es bereits weiß, wenn das Muschas auf seinem Kopf abfällt.",
+
+    "Weiß: Es rückt seinen Opfern mit einer Schar von (Unterentwicklung) im Gefolge auf den Pelz. Den letzten Hieb übernimmt es selbst.\n\nEs heißt, dass ein _ ungeachtet seiner Stärke seinen Rang als Anführer abtreten muss, wenn die Klinge an seinem Kopf schartig wird.\n\n(Englischer Name gesucht)",
+
+    "Schwarz: Der Rücken dieses Pokémon wird von harten Schuppen bedeckt. Die Schuppen wachsen kreisförmig. Dies macht es gegen Attacken nahezu immun.\n\nEs benutzt seinen Körper, um den Höhleneingang als Schutz für seine Jungen zu sperren.\n\nEs beruhigt seine Jungen, indem es diese zwischen den Stacheln auf seinem Rücken reiten lässt. Die Stacheln sondern derweil kein Gift ab."
+  ];
+
+  for(let i=1;i<=4;i++){
+
+    let img = document.createElement("img");
+    img.src = "images/icon41.png";
+    img.className = "icon";
+    img.style.position = "relative";
+
+    /* ---------------- INDIVIDUELLES POPUP ---------------- */
+    img.onclick = ()=>{
+      alert(texts[i-1]);
+    };
+
+    row.appendChild(img);
+  }
+
+  c.appendChild(row);
+
+  /* ---------------- ICON 4 BONUS POPUP ---------------- */
+  let btn2 = document.createElement("button");
+  btn2.innerText = "Reihenfolge";
+  btn2.onclick = ()=> showPopup("images/icon4.png");
+  c.appendChild(btn2);
+
+  /* ---------------- HINWEIS ---------------- */
+  let hint = document.createElement("button");
+  hint.innerText = "HINWEIS";
+  hint.onclick = ()=>alert("Finde eine Verbindung zwischen den Figuren.");
+  c.appendChild(hint);
+}
+/* ---------------- LEVEL 5 ---------------- */
+function level5(){
+
+  const c = document.getElementById("levelContent");
+
+  /* ---------------- CONTAINER (UNTER INPUT IM FLOW) ---------------- */
+  let wrap = document.createElement("div");
+  wrap.style.display = "flex";
+  wrap.style.flexDirection = "column";
+  wrap.style.alignItems = "center";
+  wrap.style.gap = "15px";
+  wrap.style.marginTop = "40px";
+
+  /* ---------------- BUTTON: MUSIK ---------------- */
+  let musicBtn = document.createElement("button");
+  musicBtn.innerText = "Musik abspielen";
+  musicBtn.onclick = ()=>{
+  let m = document.getElementById("music");
+  m.pause();              // alte Musik stoppen
+  m.currentTime = 0;      // zurücksetzen
+  m.src = "music/heroes.mp3";
+  m.volume = 1.0;         // volle Lautstärke
+  m.play();
+};
+  wrap.appendChild(musicBtn);
+
+  /* ---------------- BUTTON: HINWEIS ---------------- */
+  let hint = document.createElement("button");
+  hint.innerText = "HINWEIS";
+  hint.onclick = ()=>{
+    alert("Tut mir leid. :D (Wieder in der richtigen Reihenfolge verbinden.)");
+  };
+  wrap.appendChild(hint);
+
+  /* ---------------- HAUPTBILD (UNTER ALLEM) ---------------- */
+  let img = document.createElement("img");
+  img.src = "images/icon5.png";
+  img.style.width = "70%";        // wie gewünscht groß, aber nicht überlagernd
+  img.style.maxWidth = "900px";
+  img.style.height = "auto";
+  img.style.marginTop = "20px";
+
+  wrap.appendChild(img);
+
+  c.appendChild(wrap);
+}
+
+/* ---------------- END ---------------- */
+function loadLevelEnd(){
+  show("end");
+  document.body.style.backgroundImage = "url('images/end.png')";
+  playMusic("music/end.mp3");
+}
+
+/* ---------------- CHECK ---------------- */
+function check(){
+
+  let val = document.getElementById("input").value;
+
+  if(level === 1 && (val === "4" || val === "Vier" || val === "vier" || val === "VIER")){
+    loading(2);
+  }
+
+  else if(level === 2 && (val === "20" || val === "XX" || val === "Zwanzig" || val === "zwanzig" || val === "ZWANZIG")){
+    loading(3);
+  }
+
+  else if(level === 3 && (val === "6" || val === "Sechs" || val === "sechs" || val === "SECHS")){
+    loading(4);
+  }
+
+  else if(level === 4 && (val === "J" || val === "o" || val === "0" || val === "null"|| val === "Null" || val === "NULL")){
+    loading(5);
+  }
+
+  else if(level === 5 && (val === "Bo" || val === "bo" || val === "BO")){
+    loadLevelEnd();
+  }
+
+  else {
+    document.body.classList.add("glitch");
+
+    setTimeout(()=>{
+      document.body.classList.remove("glitch");
+    },300);
+  }
+}
+/* ---------------- REWARD ---------------- */
+function Reward(){
+  window.open("https://www.amazon.de/g/7TPRKJNJNEMLBV?t=SvL&asin=B07G3C5519", "_blank");
+}
+
+/* ---------------- EASTER EGG ---------------- */
+function showEasteregg(){
+  let p = document.createElement("div");
+  p.style.position = "fixed";
+  p.style.top = "50%";
+  p.style.left = "50%";
+  p.style.transform = "translate(-50%,-50%)";
+  p.style.width = "40vw";
+  p.style.background = "black";
+  p.style.border = "1px solid #00ffcc";
+
+  p.innerHTML = `
+    <img src="images/easteregg.png" style="width:100%">
+    <button onclick="this.parentElement.remove()">CLOSE</button>
+  `;
+
+  document.body.appendChild(p);
+}
+
+</script>
+
+</body>
+</html>
